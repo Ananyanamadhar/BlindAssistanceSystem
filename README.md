@@ -17,7 +17,7 @@ This Python program performs real-time object detection using a webcam feed, lev
 - OpenCV (cv2)
 - Ultralytics YOLO
 - PyTorch
-- pyttsx3
+  
 
 ## Installation
 
