@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Object Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-position: center;
+            background-image: url(https://i.pinimg.com/736x/60/ee/ae/60eeae18c9ceb528e8142f91c0c484ba.jpg);
+            background-color: lavenderblush;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color:brown;
+            margin-top: 20px;
+            background-color: azure;
+        }
+        h2{
+            font-size: 1rem;
+            color: brown;
+        }
+
+        .video-container {
+            width: 640px;
+            height: 480px;
+            margin: 20px 0;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .objects-container {
+            background: #fff;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 10px 20px;
+            margin-top: 20px;
+            width: 640px;
+            max-width: 90%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .objects-container h2 {
+            margin: 0 0 10px;
+            color: brown;
+        }
+
+        .objects-container ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .objects-container ul li {
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            margin: 10px;
+            border: none;
+            background-color: beige;
+            color: brown;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1><u>Real-Time Object Detection</u></h1>
+    
+    <div class="video-container">
+        <img src="{{ url_for('video_feed') }}" alt="Video Feed">
+    </div>
+
+    <div class="objects-container">
+        <h2>Detected Objects:</h2>
+        <ul id="detectedObjectsList">
+            <!-- Detected objects will appear here -->
+        </ul>
+    </div>
+
+    <div>
+        <button id="toggleButton" onclick="toggleDetection()">Start Detection</button>
+    </div>
+
+    <script>
+        let isDetecting = false;
+
+        // To track the last announced objects and their announcement time
+        const detectedObjects = new Map(); // Stores objects with their last detected timestamp
+        const REANNOUNCE_INTERVAL = 5 * 1000; // Reannounce the same object every 5 seconds
+
+        function toggleDetection() {
+            fetch('/toggle_detection', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    isDetecting = !isDetecting;
+
+                    const toggleButton = document.getElementById('toggleButton');
+                    toggleButton.textContent = isDetecting ? 'Stop Detection' : 'Start Detection';
+
+                    if (!isDetecting) {
+                        clearDetectedObjects();
+                    }
+
+                    alert(`Detection ${data.status}`);
+                });
+        }
+
+        function fetchDetectedObjects() {
+            if (isDetecting) {
+                fetch('/get_detected_objects')
+                    .then(response => response.json())
+                    .then(data => {
+                        const objectsList = document.getElementById('detectedObjectsList');
+                        objectsList.innerHTML = ''; // Clear the list before updating
+
+                        const currentTime = Date.now();
+
+                        data.objects.forEach(obj => {
+                            // Add object to the list
+                            const listItem = document.createElement('li');
+                            listItem.textContent = obj;
+                            objectsList.appendChild(listItem);
+
+                            // Check if we need to announce the object
+                            if (!detectedObjects.has(obj) || currentTime - detectedObjects.get(obj) > REANNOUNCE_INTERVAL) {
+                                announceObject(obj);
+                                detectedObjects.set(obj, currentTime); // Update the last detected timestamp
+                            }
+                        });
+
+                        // Remove stale objects from the map
+                        Array.from(detectedObjects.keys()).forEach(obj => {
+                            if (!data.objects.includes(obj)) {
+                                detectedObjects.delete(obj); // Remove objects no longer detected
+                            }
+                        });
+                    });
+            }
+        }
+
+        function clearDetectedObjects() {
+            const objectsList = document.getElementById('detectedObjectsList');
+            objectsList.innerHTML = '';
+            detectedObjects.clear(); // Clear the tracked objects
+        }
+
+        function announceObject(object) {
+            const utterance = new SpeechSynthesisUtterance(`Detected: ${object}`);
+            speechSynthesis.speak(utterance);
+        }
+
+        // Fetch detected objects every second
+        setInterval(fetchDetectedObjects, 1000);
+    </script>
+</body>
+</html>
