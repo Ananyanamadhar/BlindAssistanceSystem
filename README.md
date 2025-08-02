@@ -36,10 +36,7 @@ This Python program performs real-time object detection using a webcam feed, lev
 
 To enable CUDA for GPU acceleration:
 
-1. Ensure you have a CUDA-capable GPU.
-2. Install the CUDA Toolkit from the [NVIDIA website](https://developer.nvidia.com/cuda-downloads).
-3. Install the cuDNN library from the [NVIDIA Developer website](https://developer.nvidia.com/cudnn).
-4. Install the CUDA-enabled version of PyTorch:
+.Install the CUDA-enabled version of PyTorch:
    ```
    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
    ```
